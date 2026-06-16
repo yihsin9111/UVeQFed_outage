@@ -1,9 +1,11 @@
 
 function error_result = CIFAR(varargin)
+% 
+clear all
 % CIFAR-10 Federated Learning Experiment
 % Syntax: error_result = CIFAR('seed', 42, 'quant_type', 2, 'quant_rate', 4, 'proposed', 1)
 % Parameters: 'seed', 'dataset_type' ('iid'/'non-iid'), 'ratio', 'quant_type', 'quant_rate', 'proposed'
-clearvars -except varargin
+
 % Parse inputs
 p = inputParser;
 addParameter(p, 'seed', 1, @isnumeric);
@@ -21,6 +23,8 @@ proposed = p.Results.proposed;
 
 % Set random seed
 rng(seed_val);
+
+
 
 datanumber=5000;  %% the number of data samples of each user
 

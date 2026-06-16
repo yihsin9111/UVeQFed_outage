@@ -11,21 +11,19 @@
 
 %% Configuration - specify multiple values for batch testing
 
-seeds = [1, 2, 3];                          % Seeds for error bars
+seeds = [1];                          % Seeds for error bars
 
 % Dataset configurations (cell array)
 dataset_configs = {
     'iid',      [];             % IID (ratio ignored)
-    'non-iid',  0.3;            % Non-IID with ratio=0.3
-    'non-iid',  0.5;            % Non-IID with ratio=0.5
+    'non-iid',  0.25;            % Non-IID with ratio=0.25
 };
 
 % Quantization configurations (each row: [type, rate, proposed])
 quant_configs = [
-    2,  4,  0;                  % 2D Lattice, rate=4, no quant
-    2,  4,  1;                  % 2D Lattice, rate=4, with quant
-    3,  4,  1;                  % Scalar, rate=4, with quant
-    4,  4,  1;                  % QSGD, rate=4, with quant
+    2,  32,  0;                  % 2D Lattice, rate=4, no quant
+    2,  2,  1;                  % 2D Lattice, rate=2, with quant
+    4,  2,  1;                  % QSGD, rate=2, with quant
 ];
 
 %% Run experiments in batch
@@ -119,7 +117,7 @@ end
 
 %% Save summary
 save('./results/summary.mat', 'all_results');
-fprintf('\n✓ Summary saved to ./results/summary.mat\n');
+fprintf('\n??? Summary saved to ./results/summary.mat\n');
 
 %% Plot comparisons
 fprintf('\nGenerating plots...\n');
