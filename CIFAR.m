@@ -1,4 +1,27 @@
 
+function error_result = CIFAR(varargin)
+% CIFAR-10 Federated Learning Experiment
+% Syntax: error_result = CIFAR('seed', 42, 'quant_type', 2, 'quant_rate', 4, 'proposed', 1)
+% Parameters: 'seed', 'dataset_type' ('iid'/'non-iid'), 'ratio', 'quant_type', 'quant_rate', 'proposed'
+
+% Parse inputs
+p = inputParser;
+addParameter(p, 'seed', 1, @isnumeric);
+addParameter(p, 'dataset_type', 'iid', @ischar);
+addParameter(p, 'ratio', 0.5, @isnumeric);
+addParameter(p, 'quant_type', 2, @isnumeric);
+addParameter(p, 'quant_rate', 4, @isnumeric);
+addParameter(p, 'proposed', 0, @isnumeric);
+parse(p, varargin{:});
+
+seed_val = p.Results.seed;
+dataset_type = p.Results.dataset_type;
+ratio = p.Results.ratio;
+proposed = p.Results.proposed;
+
+% Set random seed
+rng(seed_val);
+
 clear all
 
 datanumber=5000;  %% the number of data samples of each user
@@ -27,13 +50,12 @@ imds = imageDatastore(fullfile(rootFolder, categories), ...
     'LabelSource', 'foldernames');
  
 %%%%%%%%%%%%%%%%%%%%% IID dataset %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-[imds1,imds2,imds3,imds4,imds5,imds6,imds7,imds8,imds9,imds10] = splitEachLabel(imds, 0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1);
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%%%%%%%%%%%%%%%%%%%%% Non IID dataset %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%[imds1,imds2,imds3,imds4,imds5,imds6,imds7,imds8,imds9,imds10] = GetUnbalancedCIFAR(rootFolder, ratio)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if strcmpi(dataset_type, 'iid')
+    [imds1,imds2,imds3,imds4,imds5,imds6,imds7,imds8,imds9,imds10] = splitEachLabel(imds, 0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1);
+else
+    [imds1,imds2,imds3,imds4,imds5,imds6,imds7,imds8,imds9,imds10] = GetUnbalancedCIFAR(rootFolder, ratio);
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
@@ -69,9 +91,9 @@ gm_fLattice2D = [];
 % Do full search over the lattice
 stSettings.OptSearch = 1;
 
-stSettings.type =2;
+stSettings.type = p.Results.quant_type;
 stSettings.scale=1;
-s_fRate=4;
+s_fRate = p.Results.quant_rate;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 localiterations=17;  % Number of local updates at each iteration.
@@ -494,7 +516,12 @@ globalb5=1/usernumber*sum(b5,3);
 error(i,1)=error(i,1)/10; %%%% calculate the final error
 end
 
+    error_result = error;
 
+end
+
+end
+end
 
 
 
