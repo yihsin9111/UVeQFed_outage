@@ -1,7 +1,7 @@
 
 clear all
 
-datanumber=1000;  %% the number of data samples of each user
+datanumber=5000;  %% the number of data samples of each user
 
 %Run DownloadCIFAR10 function to download CIFAR-10 dataset
 %Run
@@ -45,7 +45,7 @@ imds = imageDatastore(fullfile(rootFolder, categories), ...
 numberofneuron=50; % Number of neurons that consists of local FL model of each user
 averagenumber=1;  % Average number of runing simulations. 
 iteration=40;     % Total number of global FL iterations.
-learningspeed=0.1; % Learning speed of each user
+learningspeed=0.005; % Learning speed of each user
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -74,7 +74,7 @@ stSettings.scale=1;
 s_fRate=4;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-localiterations=1;  % Number of local updates at each iteration.
+localiterations=17;  % Number of local updates at each iteration.
 
 
 finalerror=[];
