@@ -18,18 +18,18 @@ seeds = 1:num_seeds;
 % Dataset configurations to test
 % Format: {dataset_type, ratio (only for non-iid)}
 dataset_configs = {
-    {'iid', []};           % IID dataset
-    {'non-iid', 0.3};      % Non-IID with ratio=0.3
-    {'non-iid', 0.5};      % Non-IID with ratio=0.5
+    'iid', [];           % IID dataset
+    'non-iid', 0.3;      % Non-IID with ratio=0.3
+    'non-iid', 0.5;      % Non-IID with ratio=0.5
 };
 
 % Quantization configurations to test
 % Format: {quant_type, quant_rate, proposed}
 quant_configs = {
-    {2, 4, 0};             % 2D Lattice, rate=4, no quantization
-    {2, 4, 1};             % 2D Lattice, rate=4, WITH quantization
-    {3, 4, 1};             % Scalar, rate=4, WITH quantization
-    {4, 4, 1};             % QSGD, rate=4, WITH quantization
+    2, 4, 0;             % 2D Lattice, rate=4, no quantization
+    2, 4, 1;             % 2D Lattice, rate=4, WITH quantization
+    3, 4, 1;             % Scalar, rate=4, WITH quantization
+    4, 4, 1;             % QSGD, rate=4, WITH quantization
 };
 
 %% ========== RUN EXPERIMENTS ==========
