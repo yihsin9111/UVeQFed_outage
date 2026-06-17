@@ -21,7 +21,7 @@ dataset_configs = {
 
 % Quantization configurations (each row: [type, rate, proposed])
 quant_configs = [
-    2,  32,  0;                  % 2D Lattice, rate=4, no quant
+    2,  32,  0;                  % 2D Lattice, rate=32, no quant
     2,  2,  1;                  % 2D Lattice, rate=2, with quant
     4,  2,  1;                  % QSGD, rate=2, with quant
 ];
@@ -57,7 +57,7 @@ for d = 1:num_datasets
         quant_rate = quant_configs(q, 2);
         proposed = quant_configs(q, 3);
         
-        fprintf('\n>>> Config %d/%d: dataset=%s', d + (q-1)*num_datasets, num_datasets*num_quants, dataset_type);
+        fprintf('\n>>> Config %d/%d: dataset=%s', (d-1)*num_quants + q, num_datasets*num_quants, dataset_type);
         if ~isempty(ratio)
             fprintf(' (ratio=%.2f)', ratio);
         end

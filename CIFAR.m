@@ -100,7 +100,6 @@ localiterations=17;  % Number of local updates at each iteration.
 finalerror=[];
 averageerror=[];
 kk=0;
-proposed=0;
 
 
 
