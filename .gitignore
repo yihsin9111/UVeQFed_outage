@@ -2,3 +2,5 @@ input/
 cifar-10-batches-mat/
 cifar10Train/
 cifar10Test/
+
+investigate.md

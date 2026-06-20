@@ -49,8 +49,10 @@ imds = imageDatastore(fullfile(rootFolder, categories), ...
  
 %%%%%%%%%%%%%%%%%%%%% IID dataset %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 if strcmpi(dataset_type, 'iid')
+    fprintf('  iid dataset\n');
     [imds1,imds2,imds3,imds4,imds5,imds6,imds7,imds8,imds9,imds10] = splitEachLabel(imds, 0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1);
 else
+    fprintf('  non-iid dataset with ratio %d\n', ratio);
     [imds1,imds2,imds3,imds4,imds5,imds6,imds7,imds8,imds9,imds10] = GetUnbalancedCIFAR(rootFolder, ratio);
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -512,10 +514,7 @@ globalb5=1/usernumber*sum(b5,3);
 
 error(i,1)=error(i,1)/10; %%%% calculate the final error
 end
-
-    error_result = error;
-
 end
-
 end
+error_result = error; % return final error result of all users 
 end
