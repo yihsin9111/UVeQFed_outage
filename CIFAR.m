@@ -68,7 +68,7 @@ numberofneuron=50; % Number of neurons that consists of local FL model of each u
 averagenumber=1;  % Average number of runing simulations. 
 iteration=40;     % Total number of global FL iterations.
 learningspeed=0.005; % Learning speed of each user
-q = 0.1;             % Per-device outage probability (Bernoulli, i.i.d. across k and t)
+q = 0;             % Per-device outage probability (Bernoulli, i.i.d. across k and t)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -430,8 +430,12 @@ b3vector=reshape(deviationb3,[b3length,1]);
 
 
     m_fH1 = [w1vector;w2vector;w3vector;w4vector;w5vector;...
-             b1vector;b2vector;b3vector;deviationb4;deviationb5]; 
-%    
+             b1vector;b2vector;b3vector;deviationb4;deviationb5];
+%
+   if any(isnan(m_fH1))
+       warning('NaN detected in gradient vector — replacing with 0 before quantization.');
+       m_fH1(isnan(m_fH1)) = 0;
+   end
    [m_fHhat1, ~] = m_fQuantizeData(m_fH1, s_fRate, stSettings); % coding and decoding
  
    bstart=w1length+w2length+w3length+w4length+w5length;
@@ -446,8 +450,8 @@ deviationw5=reshape(m_fHhat1(w1length+w2length+w3length+w4length+1:bstart),[10,6
  deviationb1(1,1,:)=reshape(m_fHhat1(bstart+1:bstart+b1length),[1,1,32]);
   deviationb2(1,1,:)=reshape(m_fHhat1(bstart+b1length+1:bstart+b1length+b2length),[1,1,32]);
   deviationb3(1,1,:)=reshape(m_fHhat1(bstart+b1length+b2length+1:bstart+b1length+b2length+b3length),[1,1,64]);
-deviationw4(:,1)=m_fHhat1(bstart+b1length+b2length+b3length+1:bstart+b1length+b2length+b3length+b4length);
-deviationw5(:,1)=m_fHhat1(bstart+b1length+b2length+b3length+b4length+1:bstart+b1length+b2length+b3length+b4length+b5length);
+deviationb4(:,1)=m_fHhat1(bstart+b1length+b2length+b3length+1:bstart+b1length+b2length+b3length+b4length);
+deviationb5(:,1)=m_fHhat1(bstart+b1length+b2length+b3length+b4length+1:bstart+b1length+b2length+b3length+b4length+b5length);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Zero out reconstructed gradient for outage devices (PS receives nothing) ---
@@ -504,25 +508,23 @@ end
 
 
  %%%%%%%%%%%%%%%% masked global model update (outage-aware, Algorithm 3) %%%%
-% Only aggregate from non-outage devices; divide by active count, not K.
-active_count = sum(outage_mask);
-% Padding for safe element-wise multiplication via MATLAB broadcast
-mask5D = reshape(double(outage_mask), [1,1,1,1,usernumber]);
-mask4D = reshape(double(outage_mask), [1,1,1,usernumber]);
-mask3D = reshape(double(outage_mask), [1,1,usernumber]);
+% Use index selection (not mask multiplication) to preserve weight dtype.
+% mask multiplication would promote single weights to double and corrupt
+% the layer assignments in the next iteration.
+active_idx   = find(outage_mask);   % indices of non-outage devices
+active_count = numel(active_idx);   % guaranteed >= 1 by the retry loop
 
-% If mask=0 (outage), no contribution to aggregation
-globalw1 = (1/active_count) * sum(w1 .* mask5D, 5);
-globalw2 = (1/active_count) * sum(w2 .* mask5D, 5);
-globalw3 = (1/active_count) * sum(w3 .* mask5D, 5);
-globalw4 = (1/active_count) * sum(w4 .* mask3D, 3);
-globalw5 = (1/active_count) * sum(w5 .* mask3D, 3);
+globalw1 = (1/active_count) * sum(w1(:,:,:,:, active_idx), 5);
+globalw2 = (1/active_count) * sum(w2(:,:,:,:, active_idx), 5);
+globalw3 = (1/active_count) * sum(w3(:,:,:,:, active_idx), 5);
+globalw4 = (1/active_count) * sum(w4(:,:,      active_idx), 3);
+globalw5 = (1/active_count) * sum(w5(:,:,      active_idx), 3);
 
-globalb1 = (1/active_count) * sum(b1 .* mask4D, 4);
-globalb2 = (1/active_count) * sum(b2 .* mask4D, 4);
-globalb3 = (1/active_count) * sum(b3 .* mask4D, 4);
-globalb4 = (1/active_count) * sum(b4 .* mask3D, 3);
-globalb5 = (1/active_count) * sum(b5 .* mask3D, 3);
+globalb1 = (1/active_count) * sum(b1(:,:,:,   active_idx), 4);
+globalb2 = (1/active_count) * sum(b2(:,:,:,   active_idx), 4);
+globalb3 = (1/active_count) * sum(b3(:,:,:,   active_idx), 4);
+globalb4 = (1/active_count) * sum(b4(:,:,      active_idx), 3);
+globalb5 = (1/active_count) * sum(b5(:,:,      active_idx), 3);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
