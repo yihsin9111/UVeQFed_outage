@@ -68,6 +68,7 @@ numberofneuron=50; % Number of neurons that consists of local FL model of each u
 averagenumber=1;  % Average number of runing simulations. 
 iteration=40;     % Total number of global FL iterations.
 learningspeed=0.005; % Learning speed of each user
+q = 0.1;             % Per-device outage probability (Bernoulli, i.i.d. across k and t)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -140,6 +141,12 @@ for average=1:1:averagenumber
     
     
 wupdate=zeros(iteration,usernumber);   % local model for each user
+
+% --- Outage tracking ---
+outage_log         = false(iteration, usernumber); % full K×1 mask each iteration
+active_devices_log = zeros(iteration, 1);          % sum(outage_mask) per iteration
+retry_log          = zeros(iteration, 1);          % 1 if all-outage retry occurred
+retry_count        = 0;                            % cumulative retry events
 
 %%%%%%%%%%%%% local model of each user%%%%%%%%%%%%%%%%%%%%%%%  
 w1=[];
@@ -259,6 +266,18 @@ for i=1:1:iteration
     'Verbose', false);
     end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% --- Outage mask (Algorithm 3, Steps 14-16) ---
+outage_mask = (rand(usernumber, 1) > q);       % 1_k^t ~ Bernoulli(1-q), outage probability = q
+if sum(outage_mask) == 0                       % all-outage: retry until ≥1 active
+    retry_count  = retry_count + 1;
+    retry_log(i) = 1;
+    while sum(outage_mask) == 0
+        outage_mask = (rand(usernumber, 1) > q);
+    end
+end
+outage_log(i, :)      = outage_mask';           % for record : column to row vector
+active_devices_log(i) = sum(outage_mask);       % for record : total active devices
 
 for user=1:1:usernumber
        
@@ -431,8 +450,21 @@ deviationw4(:,1)=m_fHhat1(bstart+b1length+b2length+b3length+1:bstart+b1length+b2
 deviationw5(:,1)=m_fHhat1(bstart+b1length+b2length+b3length+b4length+1:bstart+b1length+b2length+b3length+b4length+b5length);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% --- Zero out reconstructed gradient for outage devices (PS receives nothing) ---
+if ~outage_mask(user)
+    deviationw1 = zeros(size(deviationw1));
+    deviationw2 = zeros(size(deviationw2));
+    deviationw3 = zeros(size(deviationw3));
+    deviationw4 = zeros(size(deviationw4));
+    deviationw5 = zeros(size(deviationw5));
+    deviationb1 = zeros(size(deviationb1));
+    deviationb2 = zeros(size(deviationb2));
+    deviationb3 = zeros(size(deviationb3));
+    deviationb4 = zeros(size(deviationb4));
+    deviationb5 = zeros(size(deviationb5));
+end
 
- %%%%%%%%%%%%%%%% calculate the local FL model of each user after coding %%%%%%%%%%%%  
+ %%%%%%%%%%%%%%%% calculate the local FL model of each user after coding %%%%%%%%%%%%
 
     if i==1
    
@@ -471,20 +503,26 @@ end
 
 
 
- %%%%%%%%%%%%%%%% update the global FL model  %%%%%%%%%%%%  
-globalw1=1/usernumber*sum(w1,5);  % global training model
-globalw2=1/usernumber*sum(w2,5);  % global training model
-globalw3=1/usernumber*sum(w3,5);
-globalw4=1/usernumber*sum(w4,3);
+ %%%%%%%%%%%%%%%% masked global model update (outage-aware, Algorithm 3) %%%%
+% Only aggregate from non-outage devices; divide by active count, not K.
+active_count = sum(outage_mask);
+% Padding for safe element-wise multiplication via MATLAB broadcast
+mask5D = reshape(double(outage_mask), [1,1,1,1,usernumber]);
+mask4D = reshape(double(outage_mask), [1,1,1,usernumber]);
+mask3D = reshape(double(outage_mask), [1,1,usernumber]);
 
-globalw5=1/usernumber*sum(w5,3);
+% If mask=0 (outage), no contribution to aggregation
+globalw1 = (1/active_count) * sum(w1 .* mask5D, 5);
+globalw2 = (1/active_count) * sum(w2 .* mask5D, 5);
+globalw3 = (1/active_count) * sum(w3 .* mask5D, 5);
+globalw4 = (1/active_count) * sum(w4 .* mask3D, 3);
+globalw5 = (1/active_count) * sum(w5 .* mask3D, 3);
 
-globalb1=1/usernumber*sum(b1,4);  % global training model
-globalb2=1/usernumber*sum(b2,4);  % global training model
-globalb3=1/usernumber*sum(b3,4);
-globalb4=1/usernumber*sum(b4,3);
-
-globalb5=1/usernumber*sum(b5,3);
+globalb1 = (1/active_count) * sum(b1 .* mask4D, 4);
+globalb2 = (1/active_count) * sum(b2 .* mask4D, 4);
+globalb3 = (1/active_count) * sum(b3 .* mask4D, 4);
+globalb4 = (1/active_count) * sum(b4 .* mask3D, 3);
+globalb5 = (1/active_count) * sum(b5 .* mask3D, 3);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -514,6 +552,36 @@ globalb5=1/usernumber*sum(b5,3);
 
 error(i,1)=error(i,1)/10; %%%% calculate the final error
 end
+
+% --- Outage diagnostics ---
+if retry_count > 5
+    warning('UVeQFed:highRetries', ...
+        'Retry count = %d is unexpectedly high (q=%.2f, K=%d). Verify outage model.', ...
+        retry_count, q, usernumber);
+end
+fprintf('[Outage] q=%.2f | K=%d | retries=%d | mean active=%.2f\n', ...
+    q, usernumber, retry_count, mean(active_devices_log));
+
+figure('Name', sprintf('Outage Diagnostics (K=%d, q=%.2f)', usernumber, q));
+
+subplot(2, 1, 1);
+plot(1:iteration, active_devices_log, 'b-o', 'MarkerSize', 4, 'LineWidth', 1.2);
+hold on;
+yline(usernumber, 'r--', sprintf('K=%d', usernumber), 'LabelHorizontalAlignment', 'left');
+xlabel('Iteration t');
+ylabel('Active devices');
+title('Number of Active Devices per Iteration');
+ylim([0, usernumber + 1]);
+grid on;
+
+subplot(2, 1, 2);
+stem(1:iteration, retry_log, 'r', 'filled', 'MarkerSize', 5);
+xlabel('Iteration t');
+ylabel('Retry occurred');
+title(sprintf('All-Outage Retry Events per Iteration (total: %d)', retry_count));
+ylim([-0.2, 1.5]);
+grid on;
+
 end
 end
 error_result = error; % return final error result of all users 
