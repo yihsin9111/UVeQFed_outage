@@ -432,9 +432,12 @@ b3vector=reshape(deviationb3,[b3length,1]);
     m_fH1 = [w1vector;w2vector;w3vector;w4vector;w5vector;...
              b1vector;b2vector;b3vector;deviationb4;deviationb5];
 %
-   if any(isnan(m_fH1))
-       warning('NaN detected in gradient vector — replacing with 0 before quantization.');
-       m_fH1(isnan(m_fH1)) = 0;
+   v_bNonFinite = ~isfinite(m_fH1); % catches Inf as well as NaN
+   if any(v_bNonFinite)
+       warning('UVeQFed:nonFiniteUpdate', ...
+           'Iteration %d, user %d: %d non-finite entries in local update — treating as no-update.', ...
+           i, user, sum(v_bNonFinite));
+       m_fH1(v_bNonFinite) = 0;
    end
    [m_fHhat1, ~] = m_fQuantizeData(m_fH1, s_fRate, stSettings); % coding and decoding
  
