@@ -319,12 +319,26 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%calculate identification accuracy%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+b_netDiverged = false;
+for learnLayer = [2 5 8 11 13]
+    if any(~isfinite(netvaluable.Layers(learnLayer).Weights(:))) || ...
+       any(~isfinite(netvaluable.Layers(learnLayer).Bias(:)))
+        b_netDiverged = true;
+        break;
+    end
+end
+
+if b_netDiverged
+    warning('UVeQFed:nonFiniteLocalModel', ...
+        'Iteration %d, user %d: local model diverged (non-finite weights) — skipping accuracy this round.', i, user);
+else
  labels = classify(netvaluable, imds_test);
 
 % This could take a while if you are not using a GPU
 confMat = confusionmat(imds_test.Labels, labels);
 confMat = confMat./sum(confMat,2);
 error(i,1)=mean(diag(confMat))+error(i,1); % Here, error is identification accuracy.
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -431,7 +445,7 @@ b3vector=reshape(deviationb3,[b3length,1]);
 
     m_fH1 = [w1vector;w2vector;w3vector;w4vector;w5vector;...
              b1vector;b2vector;b3vector;deviationb4;deviationb5];
-%
+
    v_bNonFinite = ~isfinite(m_fH1); % catches Inf as well as NaN
    if any(v_bNonFinite)
        warning('UVeQFed:nonFiniteUpdate', ...
