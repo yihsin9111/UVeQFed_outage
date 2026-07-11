@@ -15,15 +15,23 @@ seeds = [1];                          % Seeds for error bars
 
 % Dataset configurations (cell array)
 dataset_configs = {
-    'iid',      [];             % IID (ratio ignored)
+    %'iid',      [];             % IID (ratio ignored)
     'non-iid',  0.25;            % Non-IID with ratio=0.25
 };
 
 % Quantization configurations (each row: [type, rate, proposed])
 quant_configs = [
-    2,  32,  0;                  % 2D Lattice, rate=32, no quant
-    2,  2,  1;                  % 2D Lattice, rate=2, with quant
-    4,  2,  1;                  % QSGD, rate=2, with quant
+    % 2,  32,  0, 0;                  % 2D Lattice, rate=32, no quant
+    2, 2, 1, 0;                  % 2D Lattice, rate=2, with quant
+    2, 2, 1, 0.6321;                  % SNR = 3
+    2, 2, 1, 0.5276;                  % SNR = 4
+    2, 2, 1, 0.4511;                  % SNR = 5
+    2, 2, 1, 0.3934;                  % SNR = 6
+    2, 2, 1, 0.3485;                  % SNR = 7
+    2, 2, 1, 0.3127;                  % SNR = 7
+    2, 2, 1, 0.2834;                  % SNR = 7
+    2, 2, 1, 0.2592;                  % SNR = 7
+    % 4, 2, 1, 0;                  % QSGD, rate=2, with quant
 ];
 
 %% Run experiments in batch
@@ -56,12 +64,13 @@ for d = 1:num_datasets
         quant_type = quant_configs(q, 1);
         quant_rate = quant_configs(q, 2);
         proposed = quant_configs(q, 3);
+        outage_prob = quant_configs(q, 4);
         
         fprintf('\n>>> Config %d/%d: dataset=%s', (d-1)*num_quants + q, num_datasets*num_quants, dataset_type);
         if ~isempty(ratio)
             fprintf(' (ratio=%.2f)', ratio);
         end
-        fprintf(', quant_type=%d, rate=%.1f, proposed=%d\n', quant_type, quant_rate, proposed);
+        fprintf(', quant_type=%d, rate=%.1f, proposed=%d, outage_prob=%d\n', quant_type, quant_rate, proposed, outage_prob);
         
         errors_all = [];
         
@@ -72,10 +81,10 @@ for d = 1:num_datasets
             % Run experiment
             if strcmpi(dataset_type, 'iid')
                 error_curve = CIFAR('seed', seed, 'dataset_type', dataset_type, ...
-                    'quant_type', quant_type, 'quant_rate', quant_rate, 'proposed', proposed);
+                    'quant_type', quant_type, 'quant_rate', quant_rate, 'proposed', proposed, 'outage_prob', outage_prob);
             else
                 error_curve = CIFAR('seed', seed, 'dataset_type', dataset_type, 'ratio', ratio, ...
-                    'quant_type', quant_type, 'quant_rate', quant_rate, 'proposed', proposed);
+                    'quant_type', quant_type, 'quant_rate', quant_rate, 'proposed', proposed, 'outage_prob', outage_prob);
             end
             
             % Save result
@@ -83,9 +92,9 @@ for d = 1:num_datasets
             scheme_name = scheme_names{quant_type};
             
             if strcmpi(dataset_type, 'iid')
-                filename = sprintf('%s_%.1f_%s_seed_%d.mat', scheme_name, quant_rate, dataset_type, seed);
+                filename = sprintf('%s_%.1f_%s_seed_%d_q_%d.mat', scheme_name, quant_rate, dataset_type, seed, outage_prob);
             else
-                filename = sprintf('%s_%.1f_%s_ratio_%.2f_seed_%d.mat', scheme_name, quant_rate, dataset_type, ratio, seed);
+                filename = sprintf('%s_%.1f_%s_ratio_%.2f_seed_%d_q_%d.mat', scheme_name, quant_rate, dataset_type, ratio, seed, outage_prob);
             end
             
             filepath = fullfile('./results', filename);

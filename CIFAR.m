@@ -12,12 +12,14 @@ addParameter(p, 'ratio', 0.5, @isnumeric);
 addParameter(p, 'quant_type', 2, @isnumeric);
 addParameter(p, 'quant_rate', 4, @isnumeric);
 addParameter(p, 'proposed', 0, @isnumeric);
+addParameter(p, 'outage_prob', 0, @isnumeric);
 parse(p, varargin{:});
 
 seed_val = p.Results.seed;
 dataset_type = p.Results.dataset_type;
 ratio = p.Results.ratio;
 proposed = p.Results.proposed;
+q = p.Results.outage_prob;             % Per-device outage probability (Bernoulli, i.i.d. across k and t)
 
 % Set random seed
 rng(seed_val);
@@ -66,9 +68,8 @@ end
 
 numberofneuron=50; % Number of neurons that consists of local FL model of each user
 averagenumber=1;  % Average number of runing simulations. 
-iteration=40;     % Total number of global FL iterations.
+iteration=70;     % Total number of global FL iterations.
 learningspeed=0.005; % Learning speed of each user
-q = 0;             % Per-device outage probability (Bernoulli, i.i.d. across k and t)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
