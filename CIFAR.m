@@ -117,7 +117,9 @@ w3length=5*5*32*64;
 
 w4length=64*576;
 
-w5length=10*64;
+w5length=128*64;
+
+w6length=10*128;
 
 b1length=32;
 
@@ -127,7 +129,9 @@ b3length=64;
 
 b4length=64;
 
-b5length=10;
+b5length=128;
+
+b6length=10;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 error=zeros(iteration,1);
@@ -155,18 +159,21 @@ w2=[];
 w3=[];
 w4=[];
 w5=[];
+w6=[];
 b1=[];
 b2=[];
 b3=[];
 b4=[];
 b5=[];
+b6=[];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 wnew=zeros(5,5,3,32,usernumber);
 lwnew=zeros(5,5,32,32,usernumber);
 bnew=zeros(5,5,32,64,usernumber);
 obnew=zeros(64,576,usernumber);
-fwnew=zeros(10,64,usernumber);
+fwnew=zeros(128,64,usernumber);
+outwnew=zeros(10,128,usernumber);
 
 
 
@@ -192,6 +199,8 @@ layer = [
     reluLayer();
     averagePooling2dLayer(3,'Stride',2);
     fullyConnectedLayer(64,'BiasLearnRateFactor',2); 
+    reluLayer();
+    fullyConnectedLayer(128,'BiasLearnRateFactor',2);
     reluLayer();
     fullyConnectedLayer(length(categories),'BiasLearnRateFactor',2);
     softmaxLayer()
@@ -299,7 +308,8 @@ if i > 1
 
      layer(8).Weights=globalw3;
      layer(11).Weights=globalw4;
-    layer(13).Weights=globalw5;   
+    layer(13).Weights=globalw5;
+    layer(15).Weights=globalw6;   
      
          layer(2).Bias=globalb1;
 
@@ -307,7 +317,8 @@ if i > 1
 
      layer(8).Bias=globalb3;
      layer(11).Bias=globalb4;
-    layer(13).Bias=globalb5;   
+    layer(13).Bias=globalb5;
+    layer(15).Bias=globalb6;   
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
        
@@ -321,7 +332,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%calculate identification accuracy%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 b_netDiverged = false;
-for learnLayer = [2 5 8 11 13]
+for learnLayer = [2 5 8 11 13 15]
     if any(~isfinite(netvaluable.Layers(learnLayer).Weights(:))) || ...
        any(~isfinite(netvaluable.Layers(learnLayer).Bias(:)))
         b_netDiverged = true;
@@ -350,13 +361,15 @@ if i==1
 globalw2=zeros(5,5,32,32);
 globalw3=zeros(5,5,32,64);
 globalw4=zeros(64,576);
-globalw5=zeros(10,64);
+globalw5=zeros(128,64);
+globalw6=zeros(10,128);
 
     globalb1=zeros(1,1,32);
 globalb2=zeros(1,1,32);
 globalb3=zeros(1,1,64);
 globalb4=zeros(64,1);
-globalb5=zeros(10,1);
+globalb5=zeros(128,1);
+globalb6=zeros(10,1);
 
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -371,6 +384,7 @@ w2(:,:,:,:,user)=netvaluable.Layers(5).Weights;
      w3(:,:,:,:,user)=netvaluable.Layers(8).Weights;
     w4(:,:,user)=netvaluable.Layers(11).Weights;
 w5(:,:,user)=netvaluable.Layers(13).Weights;
+w6(:,:,user)=netvaluable.Layers(15).Weights;
      
      
 b1(:,:,:,user)=netvaluable.Layers(2).Bias;
@@ -380,6 +394,7 @@ b2(:,:,:,user)=netvaluable.Layers(5).Bias;
    b3(:,:,:,user)=netvaluable.Layers(8).Bias;
    b4(:,:,user)=netvaluable.Layers(11).Bias;
    b5(:,:,user)=netvaluable.Layers(13).Bias;
+   b6(:,:,user)=netvaluable.Layers(15).Bias;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
      
@@ -394,12 +409,14 @@ deviationw2=w2(:,:,:,:,user);
 deviationw3= w3(:,:,:,:,user);
 deviationw4=w4(:,:,user);
 deviationw5=w5(:,:,user);
+deviationw6=w6(:,:,user);
 
 deviationb1=b1(:,:,:,user);
 deviationb2=b2(:,:,:,user);
 deviationb3=b3(:,:,:,user);
 deviationb4=b4(:,:,user);
 deviationb5= b5(:,:,user);
+deviationb6= b6(:,:,user);
 
 else
     
@@ -409,12 +426,14 @@ deviationw2=w2(:,:,:,:,user)-globalw2;
 deviationw3= w3(:,:,:,:,user)-globalw3;
 deviationw4=w4(:,:,user)-globalw4;
 deviationw5=w5(:,:,user)-globalw5;
+deviationw6=w6(:,:,user)-globalw6;
 
 deviationb1=b1(:,:,:,user)-globalb1;
 deviationb2=b2(:,:,:,user)-globalb2;
 deviationb3=b3(:,:,:,user)-globalb3;
 deviationb4=b4(:,:,user)-globalb4;
-deviationb5= b5(:,:,user)-globalb5;    
+deviationb5= b5(:,:,user)-globalb5;
+deviationb6= b6(:,:,user)-globalb6;    
         
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -430,7 +449,9 @@ w3vector=reshape(deviationw3,[w3length,1]);
 
 w4vector=reshape(deviationw4,[w4length,1]);
 
-w5vector=reshape(deviationw5,[w5length,1]);   
+w5vector=reshape(deviationw5,[w5length,1]);  
+
+w6vector=reshape(deviationw6,[w6length,1]);
 
 
 b1vector=reshape(deviationb1,[b1length,1]);
@@ -438,14 +459,20 @@ b1vector=reshape(deviationb1,[b1length,1]);
 b2vector=reshape(deviationb2,[b2length,1]);
 
 b3vector=reshape(deviationb3,[b3length,1]);
+
+b4vector=reshape(deviationb4,[b4length,1]);
+
+b5vector=reshape(deviationb5,[b5length,1]);
+
+b6vector=reshape(deviationb6,[b6length,1]);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
 
 
-    m_fH1 = [w1vector;w2vector;w3vector;w4vector;w5vector;...
-             b1vector;b2vector;b3vector;deviationb4;deviationb5];
+    m_fH1 = [w1vector;w2vector;w3vector;w4vector;w5vector;w6vector;...
+             b1vector;b2vector;b3vector;b4vector;b5vector;b6vector];
 
    v_bNonFinite = ~isfinite(m_fH1); % catches Inf as well as NaN
    if any(v_bNonFinite)
@@ -456,20 +483,22 @@ b3vector=reshape(deviationb3,[b3length,1]);
    end
    [m_fHhat1, ~] = m_fQuantizeData(m_fH1, s_fRate, stSettings); % coding and decoding
  
-   bstart=w1length+w2length+w3length+w4length+w5length;
+   bstart=w1length+w2length+w3length+w4length+w5length+w6length;
    
  %%%%%%%%%%%%%%%% reshape the gradient of the loss function after coding %%%%%%%%%%%%  
  deviationw1=reshape(m_fHhat1(1:w1length),[5,5,3,32]);
   deviationw2=reshape(m_fHhat1(w1length+1:w1length+w2length),[5,5,32,32]);
   deviationw3=reshape(m_fHhat1(w1length+w2length+1:w1length+w2length+w3length),[5,5,32,64]);
 deviationw4=reshape(m_fHhat1(w1length+w2length+w3length+1:w1length+w2length+w3length+w4length),[64,576]);
-deviationw5=reshape(m_fHhat1(w1length+w2length+w3length+w4length+1:bstart),[10,64]);
+deviationw5=reshape(m_fHhat1(w1length+w2length+w3length+w4length+1:w1length+w2length+w3length+w4length+w5length),[128,64]);
+deviationw6=reshape(m_fHhat1(w1length+w2length+w3length+w4length+w5length+1:bstart),[10,128]);
 
  deviationb1(1,1,:)=reshape(m_fHhat1(bstart+1:bstart+b1length),[1,1,32]);
   deviationb2(1,1,:)=reshape(m_fHhat1(bstart+b1length+1:bstart+b1length+b2length),[1,1,32]);
   deviationb3(1,1,:)=reshape(m_fHhat1(bstart+b1length+b2length+1:bstart+b1length+b2length+b3length),[1,1,64]);
 deviationb4(:,1)=m_fHhat1(bstart+b1length+b2length+b3length+1:bstart+b1length+b2length+b3length+b4length);
 deviationb5(:,1)=m_fHhat1(bstart+b1length+b2length+b3length+b4length+1:bstart+b1length+b2length+b3length+b4length+b5length);
+deviationb6(:,1)=m_fHhat1(bstart+b1length+b2length+b3length+b4length+b5length+1:bstart+b1length+b2length+b3length+b4length+b5length+b6length);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Zero out reconstructed gradient for outage devices (PS receives nothing) ---
@@ -479,11 +508,13 @@ if ~outage_mask(user)
     deviationw3 = zeros(size(deviationw3));
     deviationw4 = zeros(size(deviationw4));
     deviationw5 = zeros(size(deviationw5));
+    deviationw6 = zeros(size(deviationw6));
     deviationb1 = zeros(size(deviationb1));
     deviationb2 = zeros(size(deviationb2));
     deviationb3 = zeros(size(deviationb3));
     deviationb4 = zeros(size(deviationb4));
     deviationb5 = zeros(size(deviationb5));
+    deviationb6 = zeros(size(deviationb6));
 end
 
  %%%%%%%%%%%%%%%% calculate the local FL model of each user after coding %%%%%%%%%%%%
@@ -495,12 +526,14 @@ w2(:,:,:,:,user)=deviationw2;
  w3(:,:,:,:,user)=deviationw3;
 w4(:,:,user)=deviationw4;
 w5(:,:,user)=deviationw5;
+w6(:,:,user)=deviationw6;
 
 b1(:,:,:,user)=deviationb1;
 b2(:,:,:,user)=deviationb2;
 b3(:,:,:,user)=deviationb3;
 b4(:,:,user)=deviationb4;
 b5(:,:,user)=deviationb5;
+b6(:,:,user)=deviationb6;
               
     else       
       w1(:,:,:,:,user)=deviationw1+globalw1;
@@ -508,12 +541,14 @@ w2(:,:,:,:,user)=deviationw2+globalw2;
  w3(:,:,:,:,user)=deviationw3+globalw3;
 w4(:,:,user)=deviationw4+globalw4;
 w5(:,:,user)=deviationw5+globalw5;
+w6(:,:,user)=deviationw6+globalw6;
 
 b1(:,:,:,user)=deviationb1+globalb1;
 b2(:,:,:,user)=deviationb2+globalb2;
 b3(:,:,:,user)=deviationb3+globalb3;
 b4(:,:,user)=deviationb4+globalb4;
-b5(:,:,user)=deviationb5+globalb5;     
+b5(:,:,user)=deviationb5+globalb5;
+b6(:,:,user)=deviationb6+globalb6;     
         
     end
     
@@ -537,12 +572,14 @@ globalw2 = (1/active_count) * sum(w2(:,:,:,:, active_idx), 5);
 globalw3 = (1/active_count) * sum(w3(:,:,:,:, active_idx), 5);
 globalw4 = (1/active_count) * sum(w4(:,:,      active_idx), 3);
 globalw5 = (1/active_count) * sum(w5(:,:,      active_idx), 3);
+globalw6 = (1/active_count) * sum(w6(:,:,      active_idx), 3);
 
 globalb1 = (1/active_count) * sum(b1(:,:,:,   active_idx), 4);
 globalb2 = (1/active_count) * sum(b2(:,:,:,   active_idx), 4);
 globalb3 = (1/active_count) * sum(b3(:,:,:,   active_idx), 4);
 globalb4 = (1/active_count) * sum(b4(:,:,      active_idx), 3);
 globalb5 = (1/active_count) * sum(b5(:,:,      active_idx), 3);
+globalb6 = (1/active_count) * sum(b6(:,:,      active_idx), 3);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
