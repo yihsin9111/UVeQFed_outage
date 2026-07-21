@@ -215,8 +215,17 @@ option = trainingOptions('sgdm', ...
     'MaxEpochs', 1, ...
     'MiniBatchSize', 60, ...
     'Verbose', false);
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Preflight: fail fast if the local MATLAB installation cannot actually start training.
+if ~exist('trainNetwork', 'file') || ~license('test', 'Deep_Learning_Toolbox')
+    error('CIFAR:MissingDeepLearningToolbox', ...
+        'trainNetwork is unavailable in this MATLAB installation. Please install or repair the Deep Learning Toolbox.');
+end
+if ~exist('imageDatastore', 'file') || ~license('test', 'Image_Processing_Toolbox')
+    error('CIFAR:MissingImageProcessingToolbox', ...
+        'imageDatastore is unavailable in this MATLAB installation. Please install or repair the Image Processing Toolbox.');
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
@@ -327,8 +336,17 @@ end
 
 
 
-[netvaluable, info] = trainNetwork(imdss, layer, option); % Train local FL model.
-
+try
+    [netvaluable, info] = trainNetwork(imdss, layer, option); % Train local FL model.
+catch ME
+    if contains(ME.message, 'sl_graphical_classes') || contains(ME.message, 'readData')
+        error('CIFAR:MATLABToolboxRuntimeError', ...
+            ['MATLAB could not start trainNetwork because the Deep Learning Toolbox runtime failed to load. ' ...
+             'This is typically a broken MATLAB installation, graphics DLL issue, or incompatible toolbox setup on that PC. ' ...
+             'Repair or reinstall MATLAB and the Deep Learning Toolbox, or run the experiment on a working MATLAB installation.']);
+    end
+    rethrow(ME);
+end
 
 %%%%%%%%%%%%%%%%%%%calculate identification accuracy%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 b_netDiverged = false;
