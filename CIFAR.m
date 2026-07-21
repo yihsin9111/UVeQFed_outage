@@ -21,6 +21,16 @@ ratio = p.Results.ratio;
 proposed = p.Results.proposed;
 q = p.Results.outage_prob;             % Per-device outage probability (Bernoulli, i.i.d. across k and t)
 
+% Preflight: fail fast if toolboxes are missing (do this BEFORE any variable named 'error' is created).
+if ~exist('trainNetwork', 'file') || ~license('test', 'Deep_Learning_Toolbox')
+    MException('CIFAR:MissingDeepLearningToolbox', ...
+        'trainNetwork is unavailable in this MATLAB installation. Please install or repair the Deep Learning Toolbox.').throw();
+end
+if ~exist('imageDatastore', 'file') || ~license('test', 'Image_Processing_Toolbox')
+    MException('CIFAR:MissingImageProcessingToolbox', ...
+        'imageDatastore is unavailable in this MATLAB installation. Please install or repair the Image Processing Toolbox.').throw();
+end
+
 % Set random seed
 rng(seed_val);
 
@@ -215,16 +225,6 @@ option = trainingOptions('sgdm', ...
     'MaxEpochs', 1, ...
     'MiniBatchSize', 60, ...
     'Verbose', false);
-
-% Preflight: fail fast if the local MATLAB installation cannot actually start training.
-if ~exist('trainNetwork', 'file') || ~license('test', 'Deep_Learning_Toolbox')
-    error('CIFAR:MissingDeepLearningToolbox', ...
-        'trainNetwork is unavailable in this MATLAB installation. Please install or repair the Deep Learning Toolbox.');
-end
-if ~exist('imageDatastore', 'file') || ~license('test', 'Image_Processing_Toolbox')
-    error('CIFAR:MissingImageProcessingToolbox', ...
-        'imageDatastore is unavailable in this MATLAB installation. Please install or repair the Image Processing Toolbox.');
-end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -340,10 +340,10 @@ try
     [netvaluable, info] = trainNetwork(imdss, layer, option); % Train local FL model.
 catch ME
     if contains(ME.message, 'sl_graphical_classes') || contains(ME.message, 'readData')
-        error('CIFAR:MATLABToolboxRuntimeError', ...
+        MException('CIFAR:MATLABToolboxRuntimeError', ...
             ['MATLAB could not start trainNetwork because the Deep Learning Toolbox runtime failed to load. ' ...
              'This is typically a broken MATLAB installation, graphics DLL issue, or incompatible toolbox setup on that PC. ' ...
-             'Repair or reinstall MATLAB and the Deep Learning Toolbox, or run the experiment on a working MATLAB installation.']);
+             'Repair or reinstall MATLAB and the Deep Learning Toolbox, or run the experiment on a working MATLAB installation.']).throw();
     end
     rethrow(ME);
 end
